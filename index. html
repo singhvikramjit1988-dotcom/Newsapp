@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>NewsApp</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  ::-webkit-scrollbar{display:none}
+  html,body{height:100%;background:#050505;display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif}
+  :root{
+    --bg:#0a0a0a;--surf:#111111;--bord:#1e1e1e;--soft:#1a1815;
+    --accent:#e8d5a3;--gold:#c9a96e;--text:#f0ece4;--muted:#666055;
+  }
+  #phone{
+    width:390px;height:100vh;max-height:844px;background:var(--bg);
+    border-radius:0;overflow:hidden;display:flex;flex-direction:column;
+    position:relative;
+  }
+  @media(min-width:500px){
+    #phone{border-radius:44px;height:844px;box-shadow:0 40px 100px rgba(0,0,0,0.8),0 0 0 1px #2a2520}
+  }
+  .page{display:none;flex-direction:column;height:100%;overflow:hidden}
+  .page.active{display:flex}
+  .page.scroll-page{display:none;height:100%;overflow-y:auto}
+  .page.scroll-page.active{display:block}
+
+  /* Status bar */
+  #status{padding:12px 22px 5px;display:flex;justify-content:space-between;font-size:11px;color:var(--muted);flex-shrink:0}
+
+  /* Tab bar */
+  #tabs{display:flex;border-top:1px solid var(--bord);padding:9px 0 max(20px,env(safe-area-inset-bottom));background:var(--bg);flex-shrink:0}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;color:var(--muted);transition:color 0.15s;padding:0}
+  .tab.active{color:var(--accent)}
+  .tab-icon{font-size:20px;line-height:1}
+  .tab-label{font-size:10px;font-weight:400;letter-spacing:0.04em}
+  .tab.active .tab-label{font-weight:600}
+  .tab-dot{width:4px;height:4px;border-radius:50%;background:var(--accent);display:none}
+  .tab.active .tab-dot{display:block}
+
+  /* Shared */
+  .tag-badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:2px 7px;border-radius:4px;margin-bottom:7px}
+  .serif{font-family:'Playfair Display',serif}
+  .card{background:var(--surf);border:1px solid var(--bord);border-radius:12px;padding:14px;margin-bottom:9px;cursor:pointer;transition:border-color 0.2s}
+  .card:hover{border-color:var(--gold)}
+
+  /* Skeleton */
+  .bone{border-radius:6px;background:linear-gradient(90deg,var(--soft) 25%,#2a2820 50%,var(--soft) 75%);background-size:200% 100%;animation:sh 1.4s infinite}
+  @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  @keyframes dot{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  @keyframes fu{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  /* HOME */
+  #home-content{padding:0 14px 80px;overflow-y:auto;flex:1}
+  #home-sticky{position:sticky;top:0;background:var(--bg);z-index:10;padding:14px 0 10px}
+  #home-title{font-family:'Playfair Display',serif;font-size:26px;color:var(--accent);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+  #search-input{width:100%;padding:9px 12px;border-radius:10px;background:var(--surf);border:1px solid var(--bord);color:var(--text);font-size:13px;outline:none;margin-bottom:10px;font-family:inherit}
+  #cats{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+  .cat-btn{padding:5px 13px;border-radius:20px;border:none;cursor:pointer;font-size:11px;font-weight:600;flex-shrink:0;transition:all 0.2s;background:var(--surf);color:var(--muted)}
+  .cat-btn.active{background:var(--accent);color:var(--bg)}
+  #breaking-card{background:linear-gradient(135deg,#150f05,#0e0c09);border:1px solid rgba(201,169,110,0.25);border-radius:12px;padding:16px;margin-bottom:10px}
+  #latest-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin:12px 0 8px}
+
+  /* AGENT */
+  #agent-header{padding:14px 14px 10px;border-bottom:1px solid var(--bord);flex-shrink:0}
+  #tracked-bar{padding:8px 14px;border-bottom:1px solid var(--bord);flex-shrink:0;display:none}
+  #tracked-chips{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;margin-top:7px}
+  .tracked-chip{background:var(--surf);border:1px solid var(--bord);border-radius:8px;padding:6px 11px;flex-shrink:0}
+  #messages{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:9px}
+  .msg-wrap{display:flex}
+  .msg-wrap.user{justify-content:flex-end}
+  .bubble{max-width:82%;padding:10px 13px;font-size:13px;line-height:1.6}
+  .bubble.ai{background:var(--surf);border:1px solid var(--bord);color:var(--text);border-radius:18px 18px 18px 4px}
+  .bubble.user{background:var(--accent);color:var(--bg);border-radius:18px 18px 4px 18px}
+  #agent-input-area{padding:9px 14px 20px;border-top:1px solid var(--bord);flex-shrink:0}
+  #msg-input{width:100%;padding:9px 12px;border-radius:11px;background:var(--surf);border:1px solid var(--bord);color:var(--text);font-size:13px;outline:none;resize:none;line-height:1.5;font-family:inherit}
+  #send-btn{width:40px;height:40px;border-radius:11px;border:none;background:var(--accent);color:var(--bg);font-size:16px;cursor:pointer;flex-shrink:0}
+  #send-btn:disabled{background:var(--soft);cursor:default}
+  .suggestion{font-size:11px;padding:4px 9px;border-radius:6px;background:var(--soft);border:1px solid var(--bord);color:var(--muted);cursor:pointer}
+  .dots-wrap{display:flex;gap:5px;align-items:center;padding:11px 15px;background:var(--surf);border:1px solid var(--bord);border-radius:18px 18px 18px 4px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .dot:nth-child(1){animation:dot 1.2s ease-in-out 0s infinite}
+  .dot:nth-child(2){animation:dot 1.2s ease-in-out 0.2s infinite}
+  .dot:nth-child(3){animation:dot 1.2s ease-in-out 0.4s infinite}
+
+  /* EXPLORE */
+  #explore-header{padding:14px 14px 8px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+  #story-dots{display:flex;gap:3px;padding:0 14px 7px;flex-shrink:0}
+  .sdot{flex:1;height:2px;border-radius:2px;cursor:pointer;background:var(--soft);transition:background 0.3s}
+  #explore-card-wrap{flex:1;padding:0 14px 14px;display:flex;flex-direction:column;overflow:hidden}
+  #explore-card{flex:1;display:flex;flex-direction:column;background:var(--surf);border-radius:16px;border:1px solid var(--bord);overflow:hidden}
+  #page-bars{padding:12px 16px 0;display:flex;gap:4px}
+  .pbar{flex:1;height:3px;border-radius:2px;cursor:pointer;background:var(--soft);transition:background 0.2s}
+  #tag-row{padding:9px 16px 0;display:flex;justify-content:space-between;align-items:center}
+  #explore-content{flex:1;padding:14px 16px;overflow-y:auto;animation:fu 0.2s ease}
+  #explore-nav{padding:9px 16px 14px;border-top:1px solid var(--bord);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+  .nav-btn{padding:7px 13px;border-radius:8px;border:none;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600}
+  #prev-page-btn{background:var(--soft);color:var(--muted)}
+  #story-nav{display:flex;flex-direction:column;align-items:center;gap:1px}
+  .story-nav-btn{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:1px 8px}
+  #story-counter{font-size:10px;color:var(--muted)}
+  .ref-btn{background:none;border:1px solid var(--bord);border-radius:7px;padding:4px 9px;color:var(--muted);font-size:11px;cursor:pointer;font-family:inherit}
+</style>
+</head>
+<body>
+
+<div id="phone">
+  <!-- Status bar -->
+  <div id="status">
+    <span style="font-weight:600">9:41</span>
+    <span>WiFi 🔋</span>
+  </div>
+
+  <!-- Pages container -->
+  <div style="flex:1;overflow:hidden;position:relative">
+
+    <!-- HOME PAGE -->
+    <div id="page-home" class="page scroll-page active">
+      <div style="padding:0 14px 80px">
+        <div id="home-sticky">
+          <div id="home-title">
+            <span>NewsApp</span>
+            <div style="width:34px;height:34px;border-radius:50%;background:var(--soft);border:1px solid var(--bord);display:flex;align-items:center;justify-content:center;font-size:14px">👤</div>
+          </div>
+          <input id="search-input" placeholder="🔍  Search any topic..." onkeydown="handleSearch(event)"/>
+          <div id="cats">
+            <button class="cat-btn active" onclick="selectCat(this,'All')">All</button>
+            <button class="cat-btn" onclick="selectCat(this,'World')">World</button>
+            <button class="cat-btn" onclick="selectCat(this,'Politics')">Politics</button>
+            <button class="cat-btn" onclick="selectCat(this,'Tech')">Tech</button>
+            <button class="cat-btn" onclick="selectCat(this,'Business')">Business</button>
+            <button class="cat-btn" onclick="selectCat(this,'Science')">Science</button>
+< truncated lines 134-387 >
+  const txt = inp.value.trim();
+  if (!txt) return;
+  inp.value = "";
+  document.getElementById("send-btn").disabled = true;
+  agentBusy = true;
+  agentMessages.push({from:"user",text:txt});
+  renderMessages();
+  showTyping();
+
+  const history = agentMessages.map(m=>({role:m.from==="ai"?"assistant":"user",content:m.text}));
+  const reply = await askClaude(history,
+    "You are a smart AI news agent. Search the web for current news. Be specific, cite sources by name, keep answers under 150 words. Plain text only, no markdown.");
+  hideTyping();
+  agentMessages.push({from:"ai",text:reply||"Could not fetch results right now. Please try again."});
+  renderMessages();
+
+  if(/track|monitor|watch|follow/i.test(txt)){
+    const clean=txt.replace(/track|monitor|watch|follow|me|on|please|keep|updating|about/gi,"").trim().slice(0,30);
+    if(clean.length>2){
+      agentTracked.unshift({topic:clean[0].toUpperCase()+clean.slice(1),updates:1,since:"just now"});
+      agentTracked=agentTracked.slice(0,5);
+      renderTracked();
+    }
+  }
+  agentBusy = false;
+  document.getElementById("send-btn").disabled = false;
+}
+
+// ── EXPLORE ───────────────────────────────────────────────────────────
+let exploreStories = [];
+let si = 0; // story index
+let pi = 0; // page index
+const PLABELS = ["Story","Key Facts","More Facts","Context","Source"];
+let touchX=0, touchY=0;
+
+async function loadExplore() {
+  exploreStories = MOCK_EXPLORE; si=0; pi=0;
+  renderExploreDots(); renderExploreCard();
+  const raw = await askClaude([{role:"user",content:"Give me 5 diverse interesting news stories from today covering different worldwide topics."}],
+    "You are a news curator. Use web search. Return ONLY a valid JSON array of 5 objects: [{title,tag,source,summary,context,points}] where points is array of 5 strings. No markdown, just JSON.");
+  const data = tryJSON(raw);
+  if(data&&data.length){exploreStories=data; si=0; pi=0; renderExploreDots(); renderExploreCard();}
+}
+
+function renderExploreDots(){
+  document.getElementById("story-dots").innerHTML = exploreStories.map((_, i)=>`
+    <div class="sdot" onclick="jumpStory(${i})" style="background:${i<si?'var(--gold)':i===si?'var(--accent)':'var(--soft)'}"></div>`).join("");
+}
+
+function renderPageBars(){
+  const s = exploreStories[si]; if(!s) return;
+  const tc = TCOLORS[s.tag]||"var(--accent)";
+  document.getElementById("page-bars").innerHTML = PLABELS.map((_,i)=>`
+    <div class="pbar" onclick="jumpPage(${i})" style="background:${i<pi?'var(--gold)':i===pi?tc:'var(--soft)'}"></div>`).join("");
+}
+
+function renderExploreCard(){
+  const s = exploreStories[si]; if(!s) return;
+  const tc = TCOLORS[s.tag]||"var(--accent)";
+  renderPageBars();
+  document.getElementById("ex-tag").textContent = s.tag||"";
+  document.getElementById("ex-tag").style.color = tc;
+  document.getElementById("ex-tag").style.background = tc+"20";
+  document.getElementById("ex-source").textContent = s.source||"";
+  document.getElementById("ex-page-label").textContent = `${PLABELS[pi]} ${pi+1}/5`;
+  document.getElementById("story-counter").textContent = `${si+1}/${exploreStories.length}`;
+
+  // next button style
+  const nb = document.getElementById("next-page-btn");
+  nb.style.background = pi===4?"var(--accent)":tc+"25";
+  nb.style.color = pi===4?"var(--bg)":tc;
+  nb.textContent = pi===4?"Next ↓":"More →";
+
+  // content
+  const pts = s.points||[];
+  const half = Math.ceil(pts.length/2);
+  let html = "";
+  if(pi===0){
+    html=`<h2 class="serif" style="font-size:21px;color:var(--text);margin-bottom:13px;line-height:1.38">${s.title}</h2>
+    <p style="font-size:13px;color:var(--muted);line-height:1.75">${s.summary}</p>
+    <p style="font-size:11px;color:var(--muted);margin-top:16px;opacity:0.6">Swipe left for key facts →</p>`;
+  } else if(pi===1){
+    html=`<p style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px">Key Facts</p>`;
+    pts.slice(0,half).forEach((pt,i)=>{ html+=bulletItem(i+1,pt,tc); });
+  } else if(pi===2){
+    html=`<p style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px">More Details</p>`;
+    const rest = pts.slice(half).length ? pts.slice(half) : ["More details are emerging as this story develops."];
+    rest.forEach((pt,i)=>{ html+=bulletItem(half+i+1,pt,tc); });
+  } else if(pi===3){
+    html=`<p style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px">Why It Matters</p>
+    <p class="serif" style="font-size:15px;color:var(--text);line-height:1.8">${s.context||s.summary}</p>`;
+  } else if(pi===4){
+    html=`<p style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px">Source</p>
+    <div style="background:var(--soft);border-radius:10px;padding:14px;margin-bottom:13px">
+      <p class="serif" style="font-size:14px;color:var(--accent);font-weight:700;margin-bottom:3px">${s.source}</p>
+      <p style="font-size:11px;color:var(--muted)">Verified news source</p>
+    </div>
+    <button onclick="switchTab('agent',document.querySelectorAll('.tab')[1])" style="width:100%;padding:12px;border-radius:10px;background:${tc}18;border:1px solid ${tc}44;color:${tc};font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
+      Ask Agent to Track This →
+    </button>`;
+  }
+  const ec = document.getElementById("explore-content");
+  ec.style.animation = "none";
+  ec.offsetHeight; // reflow
+  ec.style.animation = "fu 0.2s ease";
+  ec.innerHTML = html;
+}
+
+function bulletItem(n, text, tc){
+  return `<div style="display:flex;gap:11px;align-items:flex-start;margin-bottom:13px">
+    <span style="width:22px;height:22px;border-radius:50%;background:${tc}22;color:${tc};font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">${n}</span>
+    <p style="color:var(--text);font-size:13px;line-height:1.6;margin:0">${text}</p>
+  </div>`;
+}
+
+function nextPage()  { if(pi<4){pi++;} else nextStory(); renderPageBars(); renderExploreCard(); }
+function prevPage()  { if(pi>0){pi--;} renderPageBars(); renderExploreCard(); }
+function nextStory() { if(si<exploreStories.length-1){si++;pi=0;} else{si=0;pi=0;} renderExploreDots(); renderPageBars(); renderExploreCard(); }
+function prevStory() { if(si>0){si--;pi=0;} renderExploreDots(); renderPageBars(); renderExploreCard(); }
+function jumpStory(i){ si=i;pi=0; renderExploreDots(); renderPageBars(); renderExploreCard(); }
+function jumpPage(i) { pi=i; renderPageBars(); renderExploreCard(); }
+
+// Touch swipe for explore
+document.getElementById("page-explore").addEventListener("touchstart",e=>{ touchX=e.touches[0].clientX; touchY=e.touches[0].clientY; },{passive:true});
+document.getElementById("page-explore").addEventListener("touchend",e=>{
+  const dx=touchX-e.changedTouches[0].clientX;
+  const dy=touchY-e.changedTouches[0].clientY;
+  if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>35){ dx>0?nextPage():prevPage(); }
+  else if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>35){ dy>0?nextStory():prevStory(); }
+},{passive:true});
+</script>
+</body>
+</html>
